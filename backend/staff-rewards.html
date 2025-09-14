@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ระบบจัดการแม่ประคำ — Staff & Rewards</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .hidden { display: none; }
+    @media (max-width: 768px) {
+      table.mobile-friendly thead { display: none; }
+      table.mobile-friendly tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; padding: .75rem; border-bottom: 1px solid #e5e7eb; }
+      table.mobile-friendly td { display: flex; gap: .5rem; align-items: baseline; }
+      table.mobile-friendly td::before { content: attr(data-label); font-weight: 600; color: #6b7280; width: 7.5rem; min-width: 7.5rem; }
+    }
+    .modal-enter { opacity: 0; transform: translateY(4px) scale(.98); }
+    .modal-enter-active { opacity: 1; transform: translateY(0) scale(1); transition: all .15s ease; }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen p-4 sm:p-6 space-y-10">
+  <!-- 📋 พนักงาน -->
+  <section id="staff-section" class="max-w-6xl mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm">
+    <div class="p-4 sm:p-6">
+      <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">📋 จัดการพนักงาน</h1>
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button onclick="openStaffModal()" id="openStaffModalBtn"
+          class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-sm active:scale-[.98]">
+          <span>➕</span> <span>เพิ่มพนักงาน</span>
+        </button>
+        <button id="loadStaffsBtn" onclick="loadStaffs()"
+          class="inline-flex items-center gap-2 bg-gray-800 hover:bg-black text-white px-4 py-2.5 rounded-xl shadow-sm active:scale-[.98]">
+          <span>🔄</span> <span data-text>โหลดข้อมูล</span>
+        </button>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-200">
+        <table class="min-w-full table-fixed text-sm mobile-friendly">
+          <thead class="bg-gray-100">
+            <tr class="text-left text-gray-700">
+              <th class="px-4 py-2">StaffID</th>
+              <th class="px-4 py-2">Username</th>
+              <th class="px-4 py-2">Password</th>
+              <th class="px-4 py-2">Name</th>
+              <th class="px-4 py-2">BranchID</th>
+              <th class="px-4 py-2">Role</th>
+              <th class="px-4 py-2">Status</th>
+              <th class="px-4 py-2">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="staffTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🎁 ของรางวัล -->
+  <section id="reward-section" class="max-w-6xl mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm">
+    <div class="p-4 sm:p-6">
+      <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">🎁 จัดการของรางวัล</h1>
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button onclick="openRewardModal()" id="openRewardModalBtn"
+          class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-sm active:scale-[.98]">
+          <span>➕</span> <span>เพิ่มรางวัล</span>
+        </button>
+        <button id="loadRewardsBtn" onclick="loadRewards()"
+          class="inline-flex items-center gap-2 bg-gray-800 hover:bg-black text-white px-4 py-2.5 rounded-xl shadow-sm active:scale-[.98]">
+          <span>🔄</span> <span data-text>โหลดข้อมูล</span>
+        </button>
+      </div>
+      <div class="overflow-x-auto rounded-xl border border-gray-200">
+        <table class="min-w-full table-fixed text-sm mobile-friendly">
+          <thead class="bg-gray-100">
+            <tr class="text-left text-gray-700">
+              <th class="px-4 py-2">rewardID</th>
+              <th class="px-4 py-2">rewardName</th>
+              <th class="px-4 py-2">points</th>
+              <th class="px-4 py-2">active</th>
+              <th class="px-4 py-2">startDate</th>
+              <th class="px-4 py-2">endDate</th>
+              <th class="px-4 py-2">stock</th>
+              <th class="px-4 py-2">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="rewardTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🧑‍💼 Modal พนักงาน -->
+  <div id="staffModal" class="fixed inset-0 bg-black/50 backdrop-blur-[1px] flex justify-center items-center hidden">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-[92%] max-w-md modal-enter modal-enter-active">
+      <h2 class="text-xl font-bold mb-4" id="staffModalTitle">เพิ่มพนักงานใหม่</h2>
+      <div class="grid grid-cols-1 gap-3">
+        <input id="modalUsername" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Username">
+        <input id="modalPassword" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Password">
+        <input id="modalName" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="ชื่อพนักงาน">
+        <input id="modalBranch" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Branch ID">
+        <select id="modalRole" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="admin">admin</option>
+          <option value="staff">staff</option>
+        </select>
+        <select id="modalStatus" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="active">active</option>
+          <option value="inactive">inactive</option>
+        </select>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="closeStaffModal()" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl">ยกเลิก</button>
+        <button id="saveStaffBtn" onclick="saveStaff()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm active:scale-[.98] disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2">
+          <svg data-spin class="h-5 w-5 animate-spin hidden" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <span data-text>💾 บันทึก</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎁 Modal รางวัล -->
+  <div id="rewardModal" class="fixed inset-0 bg-black/50 backdrop-blur-[1px] flex justify-center items-center hidden">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-[92%] max-w-lg modal-enter modal-enter-active">
+      <h2 class="text-xl font-bold mb-4" id="rewardModalTitle">เพิ่มรางวัล</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <input id="rewardName" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 sm:col-span-2" placeholder="ชื่อรางวัล">
+        <input id="points" type="number" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="แต้มที่ใช้">
+        <select id="active" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="TRUE">เปิดใช้งาน</option>
+          <option value="FALSE">ปิดใช้งาน</option>
+        </select>
+        <input id="startDate" type="date" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <input id="endDate" type="date" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <input id="stock" type="number" class="border p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="จำนวนคงเหลือ">
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="closeRewardModal()" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl">ยกเลิก</button>
+        <button id="saveRewardBtn" onclick="saveReward()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm active:scale-[.98] disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2">
+          <svg data-spin class="h-5 w-5 animate-spin hidden" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+          </svg>
+          <span data-text>💾 บันทึก</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./api.admin.js"></script>
+  <script type="module" src="./app.admin.js"></script>
+</body>
+</html>

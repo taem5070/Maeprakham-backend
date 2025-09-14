@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mae Prakham — รวมหน้าเว็บ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { height: 100%; }
+    .tab-btn[aria-selected="true"] { background-color: #111827; color: #fff; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+
+  <!-- 🔐 Gate: หน้าเข้าสู่ระบบ -->
+  <section id="loginGate" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white border rounded-2xl shadow p-6">
+      <h1 class="text-xl font-bold mb-2">เข้าสู่ระบบ</h1>
+      <p class="text-sm text-gray-600 mb-4">กรอกรหัสผ่านเพื่อเข้าหน้ารวมระบบ</p>
+
+      <form id="loginForm" class="space-y-3">
+        <input id="password" type="password" class="w-full border rounded-lg px-3 py-2"
+               placeholder="รหัสผ่าน" autocomplete="current-password" required />
+        <button class="w-full px-4 py-2 rounded-lg bg-black text-white">เข้าสู่ระบบ</button>
+        <p id="loginMsg" class="text-sm text-red-600 h-5"></p>
+      </form>
+
+      <p class="text-xs text-gray-500 mt-4">
+        * ระบบนี้เป็นการล็อกอินฝั่งหน้าเว็บ (client-side)
+      </p>
+    </div>
+  </section>
+
+  <!-- 🧩 แอป (ซ่อนจนกว่าจะล็อกอิน) -->
+  <div id="appShell" class="hidden">
+    <div class="max-w-6xl mx-auto p-4 md:p-6">
+      <header class="flex items-center justify-between gap-3 mb-4">
+        <h1 class="text-2xl md:text-3xl font-bold">จัดการร้านเเม่ประคำ</h1>
+        <button id="btnLogout" class="px-3 py-2 rounded-xl bg-white border hover:bg-gray-100">
+          ออกจากระบบ
+        </button>
+      </header>
+
+      <!-- แถบปุ่มสลับ -->
+      <nav class="flex gap-2 mb-4" role="tablist" aria-label="เลือกหน้า">
+        <button class="tab-btn px-4 py-2 rounded-xl bg-white border hover:bg-gray-100"
+                role="tab" aria-controls="tab-rewards-public"
+                data-target="tab-rewards-public" aria-selected="true">
+          🎁 Rewards Manager (Public)
+        </button>
+
+        <button class="tab-btn px-4 py-2 rounded-xl bg-white border hover:bg-gray-100"
+                role="tab" aria-controls="tab-staff-rewards"
+                data-target="tab-staff-rewards" aria-selected="false">
+          🧑‍💼 ระบบจัดการ Staff & Rewards
+        </button>
+
+        <button class="tab-btn px-4 py-2 rounded-xl bg-white border hover:bg-gray-100"
+                role="tab" aria-controls="tab-uplode"
+                data-target="tab-uplode" aria-selected="false">
+          🧑‍💼 แก้ข้อมูลลูกค้า
+        </button>
+      </nav>
+
+      <!-- พื้นที่แสดงผลแต่ละหน้า (โหลดด้วย iframe) -->
+      <section id="tab-rewards-public" class="tab-panel" role="tabpanel">
+        <iframe src="./rewards-public.html"
+                class="w-full h-[80vh] rounded-2xl border bg-white"
+                loading="lazy" referrerpolicy="no-referrer"></iframe>
+      </section>
+
+      <section id="tab-staff-rewards" class="tab-panel hidden" role="tabpanel">
+        <iframe src="./staff-rewards.html"
+                class="w-full h-[80vh] rounded-2xl border bg-white"
+                loading="lazy" referrerpolicy="no-referrer"></iframe>
+      </section>
+
+      <section id="tab-uplode" class="tab-panel hidden" role="tabpanel">
+        <iframe src="./uplode.html"
+                class="w-full h-[80vh] rounded-2xl border bg-white"
+                loading="lazy" referrerpolicy="no-referrer"></iframe>
+      </section>
+    </div>
+  </div>
+
+  <!-- รวม logic gate + tabs ไว้ในไฟล์แยก -->
+  <script src="./script.js"></script>
+</body>
+</html>

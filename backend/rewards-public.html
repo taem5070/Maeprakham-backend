@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rewards Manager (Public)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+  <div class="max-w-5xl mx-auto p-4 md:p-6">
+    <header class="flex items-center justify-between gap-3">
+      <h1 class="text-2xl md:text-3xl font-bold">จัดการของรางวัล</h1>
+      <button id="btnRefresh" class="px-3 py-2 rounded-lg bg-white border hover:bg-gray-50">รีเฟรช</button>
+    </header>
+
+    <section class="mt-6 bg-white rounded-2xl shadow p-4 md:p-6">
+      <h2 class="text-lg font-semibold mb-4" id="formTitle">เพิ่มของรางวัล</h2>
+      <form id="rewardForm" class="grid md:grid-cols-2 gap-4">
+        <input type="hidden" id="rewardId" />
+        <div><label class="block text-sm font-medium mb-1">ชื่อของรางวัล</label>
+          <input id="title" type="text" class="w-full border rounded-lg px-3 py-2" placeholder="เช่น คูปองส่วนลด 20%" required />
+        </div>
+        <div><label class="block text-sm font-medium mb-1">แต้มที่ใช้</label>
+          <input id="points" type="number" min="0" class="w-full border rounded-lg px-3 py-2" placeholder="เช่น 100" required />
+        </div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium mb-1">คำอธิบาย</label>
+          <textarea id="description" class="w-full border rounded-lg px-3 py-2" rows="2" placeholder="รายละเอียดของรางวัล"></textarea>
+        </div>
+        <div><label class="block text-sm font-medium mb-1">สถานะ</label>
+          <select id="status" class="w-full border rounded-lg px-3 py-2">
+            <option value="ON">ON</option><option value="OFF">OFF</option>
+          </select>
+        </div>
+        <div><label class="block text-sm font-medium mb-1">อัปโหลดรูป (ไม่บังคับ)</label>
+          <input id="image" type="file" accept="image/*" class="w-full border rounded-lg px-3 py-2 bg-white" />
+        </div>
+        <div class="md:col-span-2 flex items-center gap-3">
+          <button id="btnSave" type="submit" class="px-4 py-2 rounded-xl bg-black text-white">บันทึก</button>
+          <button id="btnClear" type="button" class="px-4 py-2 rounded-xl border bg-white hover:bg-gray-50">ล้างฟอร์ม</button>
+          <span id="saveStatus" class="text-sm text-gray-500"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="mt-6 bg-white rounded-2xl shadow p-4 md:p-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">รายการของรางวัล</h2>
+        <input id="searchInput" type="text" placeholder="ค้นหา..." class="border rounded-lg px-3 py-2 w-56" />
+      </div>
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left border-b">
+              <th class="py-2 pr-3">รูป</th>
+              <th class="py-2 pr-3">ชื่อ</th>
+              <th class="py-2 pr-3">แต้ม</th>
+              <th class="py-2 pr-3">สถานะ</th>
+              <th class="py-2 pr-3">อัปเดต</th>
+              <th class="py-2 pr-3">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="rewardsTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="./api.rewards.js"></script>
+  <script type="module" src="./app.rewards.js"></script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin — Members & Logs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-5xl mx-auto bg-white rounded-xl shadow p-6">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold">แอดมินจัดการสมาชิก & Logs</h1>
+      <div class="flex items-center gap-3">
+        <span id="authInfo" class="text-sm text-gray-500"></span>
+        <button id="logoutBtn" class="hidden px-3 py-1.5 rounded bg-gray-200">Logout</button>
+      </div>
+    </div>
+
+    <!-- ===== Sign-in ===== -->
+    <div id="loginBox" class="mt-6">
+      <div class="rounded-lg border p-4 bg-gray-50">
+        <h2 class="font-semibold mb-3">เข้าสู่ระบบแอดมิน</h2>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm mb-1">อีเมล</label>
+            <input id="email" type="email" class="border rounded w-full p-2" placeholder="admin@your.com" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">รหัสผ่าน</label>
+            <input id="password" type="password" class="border rounded w-full p-2" placeholder="••••••••" />
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <button id="loginBtn" class="px-4 py-2 rounded bg-blue-600 text-white">เข้าสู่ระบบ</button>
+          <span class="text-sm text-gray-500">ต้องมีสิทธิ์ <code>role=admin</code></span>
+        </div>
+        <p id="loginMsg" class="text-sm text-rose-600 mt-2"></p>
+      </div>
+    </div>
+
+    <!-- ===== Admin Panel ===== -->
+    <div id="adminPanel" class="mt-6 hidden">
+      <!-- Search -->
+      <div class="flex gap-2 items-end">
+        <div class="flex-1">
+          <label class="block text-sm mb-1">ค้นหาด้วยเบอร์โทร</label>
+          <input id="phoneInput" class="border rounded w-full p-2" placeholder="เช่น 0885098622" />
+        </div>
+        <!-- เปลี่ยน admin.search() -> adminUI.search() -->
+        <button onclick="adminUI.search()" class="bg-blue-600 text-white px-4 py-2 rounded">ค้นหา</button>
+      </div>
+
+      <!-- Member card -->
+      <div id="memberCard" class="mt-6 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xl font-semibold">ข้อมูลสมาชิก</h2>
+          <div class="text-sm text-gray-500">UID: <span id="adminUid">-</span></div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">เบอร์โทร (docId เดิม)</label>
+            <input id="mPhone" class="border rounded w-full p-2 bg-gray-50" readonly />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">ชื่อ</label>
+            <input id="mName" class="border rounded w-full p-2" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">วันเกิด</label>
+            <input id="mBirthday" type="date" class="border rounded w-full p-2" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">แต้มปัจจุบัน (ใน doc สมาชิก)</label>
+            <input id="mPoints" type="number" class="border rounded w-full p-2" />
+          </div>
+        </div>
+
+        <div class="flex gap-2 mt-4">
+          <!-- เปลี่ยน admin.saveMember() / admin.changePhonePrompt() -->
+          <button onclick="adminUI.saveMember()" class="bg-emerald-600 text-white px-4 py-2 rounded">บันทึกสมาชิก</button>
+          <button onclick="adminUI.changePhonePrompt()" class="bg-amber-600 text-white px-4 py-2 rounded">ย้ายเบอร์</button>
+        </div>
+      </div>
+
+      <!-- Tables -->
+      <div id="logsWrap" class="mt-8 hidden">
+        <h3 class="text-lg font-semibold mb-2">ประวัติการเพิ่มแต้ม (point_logs)</h3>
+        <div id="pointTable" class="overflow-auto border rounded"></div>
+
+        <h3 class="text-lg font-semibold mt-6 mb-2">ประวัติการแลกของรางวัล (redeem_logs)</h3>
+        <div id="redeemTable" class="overflow-auto border rounded"></div>
+      </div>
+
+      <div id="message" class="mt-6 text-sm text-gray-600"></div>
+    </div>
+  </div>
+
+  <!-- ===== Modal แก้ไข Log ===== -->
+  <div id="editModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-4 w-[520px] max-w-[95vw]">
+      <h3 class="text-lg font-semibold mb-3">แก้ไขรายการ</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="emId" type="hidden" />
+        <input id="emCol" type="hidden" />
+        <div class="col-span-2">
+          <label class="block text-sm mb-1">วันที่/เวลา</label>
+          <input id="emDate" type="datetime-local" class="border rounded w-full p-2" />
+        </div>
+        <div class="col-span-2" id="emBillWrap">
+          <label class="block text-sm mb-1">Bill</label>
+          <input id="emBill" class="border rounded w-full p-2" />
+        </div>
+        <div id="emAmountWrap">
+          <label class="block text-sm mb-1">Amount</label>
+          <input id="emAmount" type="number" class="border rounded w-full p-2" />
+        </div>
+        <div id="emPointsAddedWrap">
+          <label class="block text-sm mb-1">Points Added</label>
+          <input id="emPointsAdded" type="number" class="border rounded w-full p-2" />
+        </div>
+        <div class="col-span-2 hidden" id="emRewardWrap">
+          <label class="block text-sm mb-1">Reward Name</label>
+          <input id="emReward" class="border rounded w-full p-2" />
+        </div>
+        <div class="hidden" id="emPointsUsedWrap">
+          <label class="block text-sm mb-1">Points Used</label>
+          <input id="emPointsUsed" type="number" class="border rounded w-full p-2" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button id="emCancel" class="px-4 py-2 rounded border">ยกเลิก</button>
+        <button id="emSave" class="px-4 py-2 rounded bg-emerald-600 text-white">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ใช้เวอร์ชันแยกไฟล์ app.js/api.js -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
