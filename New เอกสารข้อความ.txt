@@ -13,7 +13,7 @@ git commit -m "init: upload project"
 git branch -M main
 
 # ผูกกับ repo GitHub (แทน USERNAME/REPO ด้วยของจริง)
-git remote add origin https://github.com/taem5070/Maeprakham-backend.git
+git remote add origin https://github.com/taem5070/web-Maeprakham-backend.git
 
 # push ขึ้น GitHub (ทับไฟล์ที่อยู่ใน remote)
 git push -u origin main --force
