@@ -43,9 +43,19 @@ window.loadStaffs = async function loadStaffs() {
         <td data-label="BranchID"  class="border px-4 py-2">${staff.BranchID || ""}</td>
         <td data-label="Role"      class="border px-4 py-2">${staff.Role || ""}</td>
         <td data-label="Status"    class="border px-4 py-2">${staff.Status || ""}</td>
-        <td data-label="จัดการ"    class="border px-4 py-2">
-          <button onclick="editStaff(${index})" class="text-blue-600">✏️</button>
-          <button onclick="deleteStaff('${sid}')" class="text-red-600 ml-2">🗑️</button>
+        <td data-label="จัดการ" class="border px-4 py-2">
+          <div class="flex gap-2">
+            <button 
+            onclick="editReward(${index})" 
+              class="w-16 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:scale-95">
+              แก้ไข
+            </button>
+            <button 
+            onclick="deleteReward('${sid}')" 
+              class="w-16 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 active:scale-95">
+              ลบ
+            </button>
+          </div>
         </td>`;
       table.appendChild(row);
     });
@@ -67,24 +77,24 @@ window.editStaff = function (index) {
   const s = (window.staffList || [])[index] || {};
   document.getElementById("modalUsername").value = s.Username || "";
   document.getElementById("modalPassword").value = "";
-  document.getElementById("modalName").value     = s.Name || "";
-  document.getElementById("modalBranch").value   = s.BranchID || "";
-  document.getElementById("modalRole").value     = s.Role || "staff";
-  document.getElementById("modalStatus").value   = s.Status || "active";
+  document.getElementById("modalName").value = s.Name || "";
+  document.getElementById("modalBranch").value = s.BranchID || "";
+  document.getElementById("modalRole").value = s.Role || "staff";
+  document.getElementById("modalStatus").value = s.Status || "active";
   window.editIndex = index;
   openStaffModal(true);
 };
 window.saveStaff = async function saveStaff() {
   const Username = document.getElementById("modalUsername").value.trim();
   const Password = document.getElementById("modalPassword").value.trim();
-  const Name     = document.getElementById("modalName").value.trim();
+  const Name = document.getElementById("modalName").value.trim();
   const BranchID = document.getElementById("modalBranch").value.trim();
-  const Role     = document.getElementById("modalRole").value;
-  const Status   = document.getElementById("modalStatus").value;
+  const Role = document.getElementById("modalRole").value;
+  const Status = document.getElementById("modalStatus").value;
 
   try {
     if (!Username) throw new Error("กรุณากรอก Username");
-    if (!Name)     throw new Error("กรุณากรอกชื่อพนักงาน");
+    if (!Name) throw new Error("กรุณากรอกชื่อพนักงาน");
     if (window.editIndex == null && await api.isUsernameTaken(Username)) {
       throw new Error("Username นี้ถูกใช้แล้ว");
     }
@@ -126,9 +136,19 @@ window.loadRewards = async function loadRewards() {
         <td data-label="startDate"  class="border px-4 py-2">${r.startDate || ""}</td>
         <td data-label="endDate"    class="border px-4 py-2">${r.endDate || ""}</td>
         <td data-label="stock"      class="border px-4 py-2">${r.stock ?? 0}</td>
-        <td data-label="จัดการ"     class="border px-4 py-2">
-          <button onclick="editReward(${index})" class="text-blue-600">✏️</button>
-          <button onclick="deleteReward('${rid}')" class="text-red-600 ml-2">🗑️</button>
+        <td data-label="จัดการ" class="border px-4 py-2">
+          <div class="flex gap-2">
+            <button 
+              onclick="editReward(${index})" 
+              class="w-16 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:scale-95">
+              แก้ไข
+            </button>
+            <button 
+              onclick="deleteReward('${rid}')" 
+              class="w-16 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 active:scale-95">
+              ลบ
+            </button>
+          </div>
         </td>`;
       table.appendChild(row);
     });
@@ -149,25 +169,25 @@ window.closeRewardModal = function () {
 window.editReward = function (index) {
   const r = (window.rewardList || [])[index] || {};
   document.getElementById("rewardName").value = r.rewardName || "";
-  document.getElementById("points").value    = r.points ?? 0;
-  document.getElementById("active").value    = toTF(r.active);
+  document.getElementById("points").value = r.points ?? 0;
+  document.getElementById("active").value = toTF(r.active);
   document.getElementById("startDate").value = r.startDate || "";
-  document.getElementById("endDate").value   = r.endDate || "";
-  document.getElementById("stock").value     = r.stock ?? 0;
+  document.getElementById("endDate").value = r.endDate || "";
+  document.getElementById("stock").value = r.stock ?? 0;
   window.editRewardIndex = index;
   openRewardModal(true);
 };
 window.saveReward = async function saveReward() {
   const rewardName = document.getElementById("rewardName").value.trim();
-  const points     = document.getElementById("points").value;
-  const active     = toTF(document.getElementById("active").value);
-  const startDate  = document.getElementById("startDate").value;
-  const endDate    = document.getElementById("endDate").value;
-  const stock      = document.getElementById("stock").value;
+  const points = document.getElementById("points").value;
+  const active = toTF(document.getElementById("active").value);
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  const stock = document.getElementById("stock").value;
   try {
     if (!rewardName) throw new Error("กรุณากรอกชื่อรางวัล");
     if (points === "") throw new Error("กรุณากรอกแต้มที่ใช้");
-    if (stock  === "") throw new Error("กรุณากรอกสต็อก");
+    if (stock === "") throw new Error("กรุณากรอกสต็อก");
     const current = window.editRewardIndex != null ? (window.rewardList || [])[window.editRewardIndex] : null;
     if (window.editRewardIndex != null) {
       await api.updateReward({ _id: current?._id || current?.rewardID, rewardName, points, active, startDate, endDate, stock });
@@ -190,9 +210,9 @@ window.deleteReward = async function deleteReward(rewardId) {
 
 /* ---------- Boot & wrap buttons ---------- */
 document.addEventListener("DOMContentLoaded", () => {
-  wrapLoading("saveStaff",   "saveStaffBtn",   "กำลังบันทึก...");
-  wrapLoading("saveReward",  "saveRewardBtn",  "กำลังบันทึก...");
-  wrapLoading("loadStaffs",  "loadStaffsBtn",  "กำลังโหลด...");
+  wrapLoading("saveStaff", "saveStaffBtn", "กำลังบันทึก...");
+  wrapLoading("saveReward", "saveRewardBtn", "กำลังบันทึก...");
+  wrapLoading("loadStaffs", "loadStaffsBtn", "กำลังโหลด...");
   wrapLoading("loadRewards", "loadRewardsBtn", "กำลังโหลด...");
   loadStaffs();
   loadRewards();

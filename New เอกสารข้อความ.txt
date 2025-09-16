@@ -1,0 +1,19 @@
+# เข้าโฟลเดอร์โปรเจกต์
+cd "C:\Users\User\OneDrive\เก่า\เดสก์ท็อป\web-Maeprakham-backend"
+
+# เริ่ม repo ใหม่ (ลบประวัติเดิม)
+rm -rf .git     # (บน Windows ใช้ rmdir /s /q .git)
+git init
+
+# เพิ่มไฟล์ทั้งหมด
+git add .
+git commit -m "init: upload project"
+
+# ตั้งชื่อ branch เป็น main
+git branch -M main
+
+# ผูกกับ repo GitHub (แทน USERNAME/REPO ด้วยของจริง)
+git remote add origin https://github.com/taem5070/Maeprakham-backend.git
+
+# push ขึ้น GitHub (ทับไฟล์ที่อยู่ใน remote)
+git push -u origin main --force

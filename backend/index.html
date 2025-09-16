@@ -5,9 +5,67 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mae Prakham — รวมหน้าเว็บ</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ✅ ปรับให้พอดีจอมือถือ + เมนูมือถือ (ไม่เปลี่ยนโครงสร้าง/แท็บเดิม) -->
   <style>
     html, body { height: 100%; }
     .tab-btn[aria-selected="true"] { background-color: #111827; color: #fff; }
+
+    /* Safe area รองรับรอยบาก */
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+    body {
+      padding-top: var(--safe-top);
+      padding-right: var(--safe-right);
+      padding-bottom: var(--safe-bottom);
+      padding-left: var(--safe-left);
+    }
+
+    /* Login gate สูงพอดีจอมือถือ */
+    #loginGate { min-height: 100svh; }
+    @supports (height: 100dvh) {
+      #loginGate { min-height: 100dvh; }
+    }
+
+    /* iframe สูงตามจอมือถือ (แทน 80vh เดิมด้วย override) */
+    .tab-panel iframe {
+      height: 75svh !important;
+      min-height: 420px;
+    }
+    @supports (height: 100dvh) {
+      .tab-panel iframe { height: 75dvh !important; }
+    }
+
+    /* Header และ tablist บนมือถือให้อ่านง่าย ไม่ล้น */
+    @media (max-width: 640px) {
+      header { flex-wrap: wrap; row-gap: 0.5rem; }
+      nav[role="tablist"] {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 0.5rem !important;
+      }
+      nav[role="tablist"]::-webkit-scrollbar { display: none; }
+      nav[role="tablist"] .tab-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        font-size: 0.95rem;
+        padding: 0.5rem 0.75rem;
+      }
+      /* มือถือ: ซ่อนแท็บเดิม ใช้เมนูไอคอน */
+      nav[role="tablist"] { display: none; }
+      #mobileTabMenu { display: block; }
+    }
+    @media (min-width: 641px) {
+      #mobileTabMenu { display: none; }
+    }
+
+    /* เมนูมือถือให้อยู่ด้านหน้าเสมอ */
+    #mobileTabMenu { position: relative; z-index: 50; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen">
@@ -24,10 +82,6 @@
         <button class="w-full px-4 py-2 rounded-lg bg-black text-white">เข้าสู่ระบบ</button>
         <p id="loginMsg" class="text-sm text-red-600 h-5"></p>
       </form>
-
-      <p class="text-xs text-gray-500 mt-4">
-        * ระบบนี้เป็นการล็อกอินฝั่งหน้าเว็บ (client-side)
-      </p>
     </div>
   </section>
 
@@ -36,23 +90,59 @@
     <div class="max-w-6xl mx-auto p-4 md:p-6">
       <header class="flex items-center justify-between gap-3 mb-4">
         <h1 class="text-2xl md:text-3xl font-bold">จัดการร้านเเม่ประคำ</h1>
+
+        <!-- 📱 เมนูไอคอนสำหรับมือถือ -->
+        <div id="mobileTabMenu" class="relative">
+          <button id="mobileMenuBtn"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                  class="p-2 rounded-xl bg-white border hover:bg-gray-100"
+                  title="เมนูหน้า">
+            <!-- ไอคอนแฮมเบอร์เกอร์ -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+
+          <!-- กล่องเมนูแบบดรอปดาวน์ -->
+          <div id="mobileMenuPanel"
+               class="hidden absolute right-0 mt-2 w-64 rounded-2xl border bg-white shadow-lg overflow-hidden">
+            <div class="p-2">
+              <button data-go="tab-rewards-public"
+                      class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+                🎁 จัดการโฆษณา
+              </button>
+              <button data-go="tab-staff-rewards"
+                      class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+                🧑‍💼 จัดการพนักงาน/ของรางวัล
+              </button>
+              <button data-go="tab-uplode"
+                      class="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+                🧑‍💼 แก้ข้อมูลลูกค้า
+              </button>
+            </div>
+          </div>
+        </div>
+
         <button id="btnLogout" class="px-3 py-2 rounded-xl bg-white border hover:bg-gray-100">
           ออกจากระบบ
         </button>
       </header>
 
-      <!-- แถบปุ่มสลับ -->
+      <!-- แถบปุ่มสลับ (เดสก์ท็อปยังใช้งานได้เหมือนเดิม) -->
       <nav class="flex gap-2 mb-4" role="tablist" aria-label="เลือกหน้า">
         <button class="tab-btn px-4 py-2 rounded-xl bg-white border hover:bg-gray-100"
                 role="tab" aria-controls="tab-rewards-public"
                 data-target="tab-rewards-public" aria-selected="true">
-          🎁 Rewards Manager (Public)
+          🎁 จัดการโฆษณา
         </button>
 
         <button class="tab-btn px-4 py-2 rounded-xl bg-white border hover:bg-gray-100"
                 role="tab" aria-controls="tab-staff-rewards"
                 data-target="tab-staff-rewards" aria-selected="false">
-          🧑‍💼 ระบบจัดการ Staff & Rewards
+          🧑‍💼 จัดการพนักงาน/ของรางวัล
         </button>
 
         <button class="tab-btn px-4 py-2 rounded-xl bg-white border hover:bg-gray-100"
@@ -85,5 +175,45 @@
 
   <!-- รวม logic gate + tabs ไว้ในไฟล์แยก -->
   <script src="./script.js"></script>
+
+  <!-- 🧩 สคริปต์เสริมสำหรับเมนูมือถือ (ไม่แก้ script.js เดิม) -->
+  <script>
+    (function () {
+      const btn = document.getElementById('mobileMenuBtn');
+      const panel = document.getElementById('mobileMenuPanel');
+
+      // เปิด/ปิดเมนู
+      btn?.addEventListener('click', () => {
+        const willOpen = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden');
+        btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      });
+
+      // คลิกนอกแล้วปิด
+      document.addEventListener('click', (e) => {
+        if (!panel || !btn) return;
+        const isInside = panel.contains(e.target) || btn.contains(e.target);
+        if (!isInside && !panel.classList.contains('hidden')) {
+          panel.classList.add('hidden');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // เลือกเมนู -> เรียกปุ่มแท็บเดิมด้วย data-target
+      panel?.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-go]');
+        if (!el) return;
+        const targetId = el.getAttribute('data-go');
+        const tabBtn = document.querySelector(
+          `nav[role="tablist"] .tab-btn[data-target="${targetId}"]`
+        );
+        if (tabBtn) tabBtn.click(); // ใช้ logic เปลี่ยนแท็บเดิมทั้งหมด
+        panel.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+        // เลื่อนให้เห็นเนื้อหาแท็บชัด ๆ บนมือถือ
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    })();
+  </script>
 </body>
 </html>

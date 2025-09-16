@@ -5,6 +5,88 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Rewards Manager (Public)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ✅ เพิ่มเฉพาะ CSS ปรับพอดีจอโทรศัพท์ (ไม่เปลี่ยนโครงสร้าง/สคริปต์) -->
+  <style>
+    /* รองรับ safe-area (รอยบาก iPhone) */
+    :root{
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+    html, body { height: 100%; }
+    body{
+      padding-top: var(--safe-top);
+      padding-right: var(--safe-right);
+      padding-bottom: var(--safe-bottom);
+      padding-left: var(--safe-left);
+      min-height: 100svh;
+    }
+    @supports (height: 100dvh){
+      body{ min-height: 100dvh; }
+    }
+
+    /* ทำให้ส่วนหลักกระชับบนจอเล็ก */
+    .max-w-5xl{ padding-left: 0.75rem; padding-right: 0.75rem; }
+
+    /* ฟอร์ม: เพิ่มพื้นที่แตะ & ขนาดตัวอักษรอ่านง่ายบนมือถือ */
+    input[type="text"],
+    input[type="number"],
+    input[type="file"],
+    textarea,
+    select,
+    button{
+      font-size: 16px;            /* ป้องกัน iOS ซูม */
+      min-height: 44px;           /* ขนาดแตะสบายมือ */
+    }
+
+    /* Header แรก: ห่อบรรทัดได้บนมือถือ */
+    header.flex.items-center.justify-between{
+      row-gap: .5rem;
+    }
+    @media (max-width: 640px){
+      header.flex.items-center.justify-between{ flex-wrap: wrap; }
+    }
+
+    /* กล่องฟอร์ม: ห่างกันพอดี */
+    section .grid{ gap: 0.75rem; }
+
+    /* แถวเครื่องมือของตาราง: ให้ช่องค้นหาเต็มบรรทัดบนมือถือ */
+    section .flex.items-center.justify-between{
+      gap: .5rem;
+    }
+    @media (max-width: 640px){
+      section .flex.items-center.justify-between{ flex-wrap: wrap; }
+      #searchInput{ width: 100% !important; }
+    }
+
+    /* ตาราง: เลื่อนข้างได้, ช่องเล็กลง, ตัดคำ */
+    table{ table-layout: auto; }
+    th, td{
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+    td, th{ padding-right: .75rem; }
+    /* ให้ข้อความยาวตัดบรรทัดเฉพาะคอลัมน์ชื่อ/คำอธิบาย (หากมี) */
+    td:nth-child(2), th:nth-child(2){
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    /* คอลัมน์รูป: จำกัดขนาดภาพ */
+    #rewardsTable td:first-child img{
+      width: 64px; height: 64px; object-fit: cover; border-radius: .5rem;
+    }
+    @media (max-width: 640px){
+      #rewardsTable td:first-child img{ width: 56px; height: 56px; }
+    }
+
+    /* ปุ่มจัดการในตาราง: ช่องว่างพอดีมือบนมือถือ */
+    #rewardsTable button{
+      min-height: 36px;
+    }
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-900 min-h-screen">
   <div class="max-w-5xl mx-auto p-4 md:p-6">

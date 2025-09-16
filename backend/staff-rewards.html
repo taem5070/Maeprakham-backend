@@ -6,15 +6,99 @@
   <title>ระบบจัดการแม่ประคำ — Staff & Rewards</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* ====== ปรับประสบการณ์บนมือถือ ====== */
+    :root{
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+    html, body { height: 100%; }
+    body{
+      padding-top: var(--safe-top);
+      padding-right: var(--safe-right);
+      padding-bottom: var(--safe-bottom);
+      padding-left: var(--safe-left);
+      min-height: 100svh;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @supports (height: 100dvh){
+      body{ min-height: 100dvh; }
+    }
+
+    /* ขนาดแตะ & ฟอนต์กัน iOS auto-zoom */
+    input, select, textarea, button{
+      font-size: 16px;
+      min-height: 44px;
+    }
+
+    /* เว้นระยะคอนเทนต์บนจอเล็ก */
+    @media (max-width: 640px){
+      body { padding-left: max(var(--safe-left), 10px); padding-right: max(var(--safe-right), 10px); }
+    }
+
+    /* ====== ตารางแบบ mobile card (คุณมีอยู่แล้ว — เสริมให้ครบช่วงจอ) ====== */
     .hidden { display: none; }
     @media (max-width: 768px) {
+      table.mobile-friendly { width: 100%; }
       table.mobile-friendly thead { display: none; }
-      table.mobile-friendly tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; padding: .75rem; border-bottom: 1px solid #e5e7eb; }
-      table.mobile-friendly td { display: flex; gap: .5rem; align-items: baseline; }
-      table.mobile-friendly td::before { content: attr(data-label); font-weight: 600; color: #6b7280; width: 7.5rem; min-width: 7.5rem; }
+      table.mobile-friendly tbody { display: grid; gap: .5rem; }
+      table.mobile-friendly tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .5rem;
+        padding: .75rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: #fff;
+        border-radius: .75rem;
+      }
+      /* หน้าจอเล็กมาก ให้แถวเป็นคอลัมน์เดียว อ่านง่าย */
+      @media (max-width: 420px){
+        table.mobile-friendly tr { grid-template-columns: 1fr; }
+      }
+      table.mobile-friendly td {
+        display: flex;
+        gap: .5rem;
+        align-items: baseline;
+        min-width: 0; /* กันข้อความล้น */
+      }
+      table.mobile-friendly td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #6b7280;
+        width: 7.5rem;
+        min-width: 7.5rem;
+        flex: 0 0 7.5rem;
+      }
+      /* ให้ค่าด้านขวาตัดบรรทัดได้ */
+      table.mobile-friendly td > * {
+        white-space: normal;
+        word-break: break-word;
+      }
     }
+
+    /* โครงตารางปกติ: เปิดเลื่อนข้างได้เสมอ */
+    .table-fixed { table-layout: fixed; }
+    .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+    th, td { vertical-align: middle; }
+
+    /* ====== โมดัล: สูงพอดีจอ, เลื่อนภายใน, เข้า/ออกนุ่มนวล ====== */
     .modal-enter { opacity: 0; transform: translateY(4px) scale(.98); }
     .modal-enter-active { opacity: 1; transform: translateY(0) scale(1); transition: all .15s ease; }
+
+    /* กล่องโมดัล (ตัว .bg-white ภายใน) ให้จำกัดความสูงแล้วเลื่อนภายใน */
+    #staffModal > div,
+    #rewardModal > div{
+      max-height: 90svh;
+      overflow: auto;
+    }
+    @supports (height: 100dvh){
+      #staffModal > div,
+      #rewardModal > div{ max-height: 90dvh; }
+    }
+
+    /* ปุ่มเครื่องมือเหนือโต๊ะ: ให้ wrap และกดง่ายบนมือถือ */
+    .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; }
   </style>
 </head>
 
@@ -23,7 +107,7 @@
   <section id="staff-section" class="max-w-6xl mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm">
     <div class="p-4 sm:p-6">
       <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">📋 จัดการพนักงาน</h1>
-      <div class="mb-4 flex flex-wrap gap-2">
+      <div class="mb-4 toolbar">
         <button onclick="openStaffModal()" id="openStaffModalBtn"
           class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-sm active:scale-[.98]">
           <span>➕</span> <span>เพิ่มพนักงาน</span>
@@ -57,7 +141,7 @@
   <section id="reward-section" class="max-w-6xl mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm">
     <div class="p-4 sm:p-6">
       <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">🎁 จัดการของรางวัล</h1>
-      <div class="mb-4 flex flex-wrap gap-2">
+      <div class="mb-4 toolbar">
         <button onclick="openRewardModal()" id="openRewardModalBtn"
           class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-sm active:scale-[.98]">
           <span>➕</span> <span>เพิ่มรางวัล</span>
