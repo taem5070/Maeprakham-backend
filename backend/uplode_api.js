@@ -7,7 +7,7 @@ import {
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, getDocs, orderBy, writeBatch,
-  limit, startAfter, serverTimestamp
+  limit, startAfter, serverTimestamp, addDoc, runTransaction, increment
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ===== Firebase Config =====
@@ -141,11 +141,108 @@ export async function updateLog(col, id, data) {
 
 export async function softDeleteLog(col, id, reason) {
   await assertAdmin();
-  await updateDoc(doc(db, col, id), {
-    deleted: true,
-    deleteReason: reason || null,
-    deletedAt: serverTimestamp(),
-    deletedBy: auth.currentUser?.uid || "unknown",
+  const db = getFirestore();
+
+  await runTransaction(db, async (tx) => {
+    const logRef = doc(db, col, id);
+    const logSnap = await tx.get(logRef);
+    if (!logSnap.exists()) throw new Error("ไม่พบรายการ log");
+    const log = logSnap.data();
+
+    // กันกดซ้ำ
+    if (log.deleted === true) return;
+
+    const phone = log.phone;
+    if (!phone) throw new Error("log ไม่มีหมายเลขโทรศัพท์");
+
+    const memRef = doc(db, "members", phone);
+
+    // ปรับแต้มตามชนิด log
+    if (col === "point_logs") {
+      const pts = Math.abs(Number(log.pointsAdded || 0));
+      if (pts) tx.update(memRef, { points: increment(-pts) });   // หักแต้มที่เคยเพิ่ม
+    } else if (col === "redeem_logs") {
+      const used = Math.abs(Number(log.pointsUsed || 0));
+      if (used) tx.update(memRef, { points: increment(+used) }); // คืนแต้มที่เคยใช้
+    }
+
+    // ทำเครื่องหมายลบ
+    tx.update(logRef, {
+      deleted: true,
+      deleteReason: reason || null,
+      deletedAt: serverTimestamp(),
+      deletedBy: (auth.currentUser?.uid || "unknown"),
+    });
+  });
+}
+
+/** ปรับแต้มแบบมี log (delta อาจเป็น + หรือ -) */
+export async function adjustMemberPoints(phone, delta, note = "เพิ่มแต้มจากผู้ดูแล") {
+  await assertAdmin();
+  const db = getFirestore();
+
+  if (!phone) throw new Error("ไม่มีเบอร์โทร");
+  delta = Number(delta || 0);
+  if (!delta) return; // ไม่เปลี่ยนแต้ม
+
+  await runTransaction(db, async (tx) => {
+    const memRef = doc(db, "members", phone);
+    const memSnap = await tx.get(memRef);
+    if (!memSnap.exists()) throw new Error("ไม่พบสมาชิก");
+
+    // 1) อัปเดตแต้ม
+    tx.update(memRef, {
+      points: increment(delta),
+      updatedAt: serverTimestamp(),
+      updatedBy: (auth.currentUser?.uid || "unknown"),
+    });
+
+    // 2) สร้าง log — ให้โผล่ใน point_logs
+    const logsCol = collection(db, "point_logs");
+    await addDoc(logsCol, {
+      phone,
+      bill: "ADMIN_ADJUST",
+      amount: 0,
+      pointsAdded: delta,           // อนุญาตให้เป็นค่าลบได้
+      isAdminAdjust: true,
+      adminNote: note,
+      staffId: (auth.currentUser?.uid || "unknown"),
+      createdAt: serverTimestamp(),
+      deleted: false,
+    });
+  });
+}
+
+export async function restoreDeletedLog(col, id, note) {
+  await assertAdmin();
+  const db = getFirestore();
+
+  await runTransaction(db, async (tx) => {
+    const logRef = doc(db, col, id);
+    const logSnap = await tx.get(logRef);
+    if (!logSnap.exists()) throw new Error("ไม่พบรายการ log");
+    const log = logSnap.data();
+
+    if (log.deleted !== true) return; // ไม่ได้ลบ ไม่ต้องทำอะไร
+
+    const phone = log.phone;
+    if (!phone) throw new Error("log ไม่มีหมายเลขโทรศัพท์");
+    const memRef = doc(db, "members", phone);
+
+    if (col === "point_logs") {
+      const pts = Math.abs(Number(log.pointsAdded || 0));
+      if (pts) tx.update(memRef, { points: increment(+pts) }); // เติมกลับ
+    } else if (col === "redeem_logs") {
+      const used = Math.abs(Number(log.pointsUsed || 0));
+      if (used) tx.update(memRef, { points: increment(-used) }); // ตัดกลับ
+    }
+
+    tx.update(logRef, {
+      deleted: false,
+      restoreNote: note || null,
+      restoredAt: serverTimestamp(),
+      restoredBy: (auth.currentUser?.uid || "unknown"),
+    });
   });
 }
 

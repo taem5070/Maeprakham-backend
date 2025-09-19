@@ -2,8 +2,11 @@
 import {
   onAuth, signIn, signOutUser,
   getMember, updateMember, migratePhone,
-  getLogsByPhone, updateLog, softDeleteLog
+  getLogsByPhone, updateLog, softDeleteLog,
+  restoreDeletedLog,
+  adjustMemberPoints
 } from "./uplode_api.js";
+
 
 const $ = (id) => document.getElementById(id);
 const show = (el) => el.classList.remove("hidden");
@@ -25,17 +28,17 @@ const toLocalDatetimeInput = (ts) => {
   else if (ts) d = new Date(ts);
   else d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const fromDatetimeInput = (v) => v ? new Date(v) : null;
 
 // ---------- Auth UI ----------
 onAuth(async (user, role) => {
-  const loginBox   = $("loginBox");
+  const loginBox = $("loginBox");
   const adminPanel = $("adminPanel");
-  const logoutBtn  = $("logoutBtn");
-  const authInfo   = $("authInfo");
-  const loginMsg   = $("loginMsg");
+  const logoutBtn = $("logoutBtn");
+  const authInfo = $("authInfo");
+  const loginMsg = $("loginMsg");
 
   if (!user) {
     hide(adminPanel); show(loginBox); hide(logoutBtn);
@@ -55,7 +58,7 @@ onAuth(async (user, role) => {
 
 $("loginBtn").onclick = async () => {
   const email = $("email").value.trim();
-  const pass  = $("password").value;
+  const pass = $("password").value;
   $("loginMsg").textContent = "";
   try { await signIn(email, pass); }
   catch (e) { $("loginMsg").textContent = e.message || "เข้าสู่ระบบไม่สำเร็จ"; }
@@ -94,10 +97,23 @@ function renderPointTable(rows) {
       <td class="border px-2 py-1">${r.pointsAdded ?? 0}</td>
       <td class="border px-2 py-1">${fmtDate(r.createdAt)}</td>
       <td class="border px-2 py-1">${r.staffId ?? "-"}</td>
-      <td class="border px-2 py-1">${r.deleted ? 'ลบแล้ว' : '-'}</td>
       <td class="border px-2 py-1">
-        <button class="bg-amber-600 text-white px-2 py-1 rounded mr-1" onclick="adminUI.editLog('point_logs','${r._id}')">แก้</button>
-        <button class="bg-rose-600 text-white px-2 py-1 rounded" onclick="adminUI.softDelete('point_logs','${r._id}')">ลบ</button>
+        ${
+          r.deleted
+            ? "ลบแล้ว"
+            : (r.isAdminAdjust ? "เพิ่มแต้มจากผู้ดูแล" : "-")
+        }
+      </td>
+      <td class="border px-2 py-1">
+        <button class="bg-amber-600 text-white px-2 py-1 rounded mr-1"
+          onclick="adminUI.editLog('point_logs','${r._id}')">แก้</button>
+        ${
+          r.deleted
+            ? `<button class="bg-green-600 text-white px-2 py-1 rounded"
+                 onclick="adminUI.restore('point_logs','${r._id}')">กู้คืน</button>`
+            : `<button class="bg-rose-600 text-white px-2 py-1 rounded"
+                 onclick="adminUI.softDelete('point_logs','${r._id}')">ลบ</button>`
+        }
       </td>
     </tr>`).join("");
   return head + body + `</tbody></table>`;
@@ -126,7 +142,10 @@ function renderRedeemTable(rows) {
       <td class="border px-2 py-1">${r.deleted ? 'ลบแล้ว' : '-'}</td>
       <td class="border px-2 py-1">
         <button class="bg-amber-600 text-white px-2 py-1 rounded mr-1" onclick="adminUI.editLog('redeem_logs','${r._id}')">แก้</button>
-        <button class="bg-rose-600 text-white px-2 py-1 rounded" onclick="adminUI.softDelete('redeem_logs','${r._id}')">ลบ</button>
+          ${r.deleted
+      ? `<button class="bg-green-600 text-white px-2 py-1 rounded" onclick="adminUI.restore('redeem_logs','${r._id}')">กู้คืน</button>`
+      : `<button class="bg-rose-600 text-white px-2 py-1 rounded" onclick="adminUI.softDelete('redeem_logs','${r._id}')">ลบ</button>`
+    }
       </td>
     </tr>`).join("");
   return head + body + `</tbody></table>`;
@@ -145,15 +164,17 @@ window.adminUI = {
     if (!mem) { $("message").textContent = "ไม่พบสมาชิกเบอร์นี้"; return; }
 
     show($("memberCard"));
-    $("mPhone").value    = mem.phone || phone;
-    $("mName").value     = mem.name  || "";
-    $("mBirthday").value = mem.birthday ? new Date(mem.birthday).toISOString().slice(0,10) : "";
-    $("mPoints").value   = mem.points ?? 0;
+    $("mPhone").value = mem.phone || phone;
+    $("mName").value = mem.name || "";
+    $("mBirthday").value = mem.birthday ? new Date(mem.birthday).toISOString().slice(0, 10) : "";
+    $("mPoints").value = mem.points ?? 0;
 
-    const pointRows  = await getLogsByPhone("point_logs", phone);
+    window._origPoints = mem.points ?? 0;
+
+    const pointRows = await getLogsByPhone("point_logs", phone);
     const redeemRows = await getLogsByPhone("redeem_logs", phone);
 
-    $("pointTable").innerHTML  = renderPointTable(pointRows);
+    $("pointTable").innerHTML = renderPointTable(pointRows);
     $("redeemTable").innerHTML = renderRedeemTable(redeemRows);
     show($("logsWrap"));
     $("message").textContent = "โหลดเสร็จ";
@@ -163,12 +184,23 @@ window.adminUI = {
     const phone = $("mPhone").value.trim();
     if (!phone) return;
 
-    await updateMember(phone, {
-      name: $("mName").value.trim() || null,
-      birthday: $("mBirthday").value || null, // yyyy-mm-dd
-      points: Number($("mPoints").value || 0),
-    });
+    const newName = $("mName").value.trim() || null;
+    const newDob = $("mBirthday").value || null;          // yyyy-mm-dd
+    const newPts = Number($("mPoints").value || 0);
+    const oldPts = Number(window._origPoints ?? 0);
+    const delta = newPts - oldPts;
+
+    // 1) บันทึกเฉพาะชื่อ/วันเกิด (อย่าเขียน points ตรงๆ)
+    await updateMember(phone, { name: newName, birthday: newDob });
+
+    // 2) ถ้ามีส่วนต่างแต้ม → ปรับผ่าน transaction + สร้าง log
+    if (delta !== 0) {
+      const note = delta > 0 ? "เพิ่มแต้มจากผู้ดูแล" : "ปรับลดแต้มโดยผู้ดูแล";
+      await adjustMemberPoints(phone, delta, note);
+    }
+
     $("message").textContent = "บันทึกสมาชิกเรียบร้อย";
+    await this.search();   // รีโหลดใหม่ให้ตารางและแต้มอัปเดต
   },
 
   async changePhonePrompt() {
@@ -191,30 +223,30 @@ window.adminUI = {
     const d = rows.find(r => r._id === id);
     if (!d) return alert("ไม่พบรายการ");
 
-    $("emId").value  = id;
+    $("emId").value = id;
     $("emCol").value = col;
     $("emDate").value = toLocalDatetimeInput(d.createdAt);
 
     const isPoint = col === "point_logs";
-    ["emBillWrap","emAmountWrap","emPointsAddedWrap"]
+    ["emBillWrap", "emAmountWrap", "emPointsAddedWrap"]
       .forEach(id => $(id).classList.toggle("hidden", !isPoint));
-    ["emRewardWrap","emPointsUsedWrap"]
-      .forEach(id => $(id).classList.toggle("hidden",  isPoint));
+    ["emRewardWrap", "emPointsUsedWrap"]
+      .forEach(id => $(id).classList.toggle("hidden", isPoint));
 
     if (isPoint) {
-      $("emBill").value        = d.bill ?? "";
-      $("emAmount").value      = d.amount ?? 0;
+      $("emBill").value = d.bill ?? "";
+      $("emAmount").value = d.amount ?? 0;
       $("emPointsAdded").value = d.pointsAdded ?? 0;
     } else {
-      $("emReward").value     = d.rewardName ?? "";
+      $("emReward").value = d.rewardName ?? "";
       $("emPointsUsed").value = d.pointsUsed ?? 0;
     }
 
     $("emSave").onclick = async () => {
       const payload = { createdAt: fromDatetimeInput($("emDate").value) };
       if (isPoint) {
-        payload.bill        = $("emBill").value.trim();
-        payload.amount      = Number($("emAmount").value || 0);
+        payload.bill = $("emBill").value.trim();
+        payload.amount = Number($("emAmount").value || 0);
         payload.pointsAdded = Number($("emPointsAdded").value || 0);
       } else {
         payload.rewardName = $("emReward").value.trim();
@@ -234,8 +266,17 @@ window.adminUI = {
     await softDeleteLog(col, id, reason);
     $("message").textContent = "ทำเครื่องหมายลบเรียบร้อย (soft delete)";
     await this.search();
+  },
+
+  async restore(col, id) {
+    const note = prompt("หมายเหตุการกู้คืน:", "");
+    await restoreDeletedLog(col, id, note);
+    $("message").textContent = "กู้คืนรายการเรียบร้อย";
+    await this.search();
   }
+
 };
+
 
 // bind search button in HTML
 window.admin = { search: () => adminUI.search() };
